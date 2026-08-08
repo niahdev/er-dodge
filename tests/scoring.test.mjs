@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildNoRecentRankResult,
   calculateScore,
+  getPreviousRankSeasonFromGames,
 } from "../netlify/functions/lib/analyzer.mjs";
 import {
   getDakggStats,
@@ -38,6 +39,18 @@ function stats(overrides = {}) {
     ...overrides,
   };
 }
+
+test("selects the most recent previous ranked season for fallback analysis", () => {
+  const games = [
+    { matchingMode: 3, seasonId: 32 },
+    { matchingMode: 2, seasonId: 31 },
+    { matchingMode: 3, seasonId: 30 },
+    { matchingMode: 3, seasonId: 29 },
+  ];
+  assert.equal(getPreviousRankSeasonFromGames(games, 32), 30);
+  assert.equal(getPreviousRankSeasonFromGames(games, 30), 29);
+  assert.equal(getPreviousRankSeasonFromGames([], 32), null);
+});
 
 test("holds scoring when no ranked game exists in the fetched history", () => {
   const result = buildNoRecentRankResult("테스트", {

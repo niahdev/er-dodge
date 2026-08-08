@@ -2055,6 +2055,7 @@
                     </div>
                 </div>
                 <p class="comment">${escapeHtml(player.comment)}</p>
+                ${previousSeasonNotice(player)}
                 ${sampleComment}
                 ${warnings}
             </article>
@@ -2070,6 +2071,23 @@
             return `<p class="comment">\uCD5C\uADFC 20\uAC8C\uC784\uC5D0 \uC77C\uBC18\uAC8C\uC784\uC774 \uB7AD\uD06C\uAC8C\uC784\uBCF4\uB2E4 \uB9CE\uC740 \uC720\uC800\uC785\uB2C8\uB2E4.</p>`;
         }
         return "";
+    }
+
+    function previousSeasonNotice(player) {
+        const metrics = player?.metrics || {};
+        if (metrics.seasonBasis !== "previous") return "";
+        const currentGames = Number(metrics.currentSeasonGames || 0);
+        const minimumGames = Number(metrics.currentSeasonMinimumGames || 20);
+        const seasonLabel = metrics.seasonLabel || "이전 시즌";
+        return `
+            <aside class="sample-notice" aria-label="이전 시즌 분석 기준 안내">
+                <strong>이전 시즌 기준입니다</strong>
+                <p>
+                    현재 시즌 랭크가 <b>${currentGames}/${minimumGames}판</b>으로 충분히 쌓이지 않아
+                    <b>${escapeHtml(seasonLabel)}</b> 전적과 캐시된 티어 통계를 기준으로 판단했습니다.
+                </p>
+            </aside>
+        `;
     }
 
     function updateTeamSignal(players) {
@@ -2353,6 +2371,7 @@
                     <span>COLLECTED RANK DATA</span>
                     <h2>${escapeHtml(player.nickname)}</h2>
                 </section>
+                ${previousSeasonNotice(player)}
                 <div class="my-metrics">
                     ${metricCard("RANK SEASON", metrics.seasonLabel || `시즌 ID ${metrics.seasonId}`, "인게임 기준 시즌")}
                     ${metricCard("TOTAL RANK GAMES", metrics.totalGames.toLocaleString("ko-KR"), "시즌 랭크 경기 수")}

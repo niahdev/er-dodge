@@ -77,7 +77,8 @@ const gamesCache = new TtlSingleFlightCache({ maxEntries: 5000 });
 const seasonStatsCache = new TtlSingleFlightCache({ maxEntries: 5000 });
 const seasonIdCache = new TtlSingleFlightCache({ maxEntries: 4 });
 const analysisCache = new TtlSingleFlightCache({ maxEntries: 5000 });
-const ANALYSIS_CACHE_VERSION = "2026-07-19.1";
+const ANALYSIS_CACHE_VERSION = "2026-08-09.1";
+const CURRENT_SEASON_MIN_GAMES = 20;
 
 function normalizeNicknameKey(nickname) {
   return String(nickname || "").normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
@@ -206,6 +207,16 @@ async function getCurrentSeasonId() {
       return seasonId;
     },
   });
+}
+
+export function getPreviousRankSeasonFromGames(games, currentSeasonId) {
+  const game = games.find(
+    (item) =>
+      Number(item.matchingMode) === 3 &&
+      Number(item.seasonId) > 0 &&
+      Number(item.seasonId) < Number(currentSeasonId),
+  );
+  return game ? Number(game.seasonId) : null;
 }
 
 async function getSeasonStats(uid, seasonId) {
@@ -954,9 +965,39 @@ export function cleanNickname(value) {
 export async function evaluatePlayer(nickname) {
   const uid = await getUid(nickname);
   const games = await getGames(uid);
-  const season = getRankSeasonFromGames(games) ?? await getCurrentSeasonId();
-  const stats = await getSeasonStats(uid, season);
-  const recent = recentRankGames(games, season);
+  const currentSeasonId = await getCurrentSeasonId();
+  const latestRankSeason = getRankSeasonFromGames(games);
+  let season = latestRankSeason ?? currentSeasonId;
+  let stats = await getSeasonStats(uid, season);
+  let recent = recentRankGames(games, season);
+  const currentSeasonGames = season === currentSeasonId
+    ? Number(stats.totalGames) || 0
+    : recentRankGames(games, currentSeasonId).length;
+  let seasonBasis = "current";
+
+  if (
+    season !== currentSeasonId ||
+    Number(stats.totalGames) < CURRENT_SEASON_MIN_GAMES
+  ) {
+    const previousSeasonId = season !== currentSeasonId
+      ? season
+      : getPreviousRankSeasonFromGames(games, currentSeasonId);
+    if (previousSeasonId && previousSeasonId !== season) {
+      try {
+        const previousStats = await getSeasonStats(uid, previousSeasonId);
+        const previousRecent = recentRankGames(games, previousSeasonId);
+        if (previousRecent.length) {
+          season = previousSeasonId;
+          stats = previousStats;
+          recent = previousRecent;
+        }
+      } catch (error) {
+        console.warn("Previous-season analysis is unavailable:", error.message);
+      }
+    }
+    if (season !== currentSeasonId) seasonBasis = "previous";
+  }
+
   const totalGames = Number(stats.totalGames);
   const totalWins = optionalNumber(stats.totalWins);
   const averageRank = optionalNumber(stats.averageRank);
@@ -967,6 +1008,11 @@ export async function evaluatePlayer(nickname) {
   const baseMetrics = {
     seasonId: season,
     seasonLabel: formatIngameSeason(season),
+    seasonBasis,
+    currentSeasonId,
+    currentSeasonLabel: formatIngameSeason(currentSeasonId),
+    currentSeasonGames,
+    currentSeasonMinimumGames: CURRENT_SEASON_MIN_GAMES,
     totalGames,
     winRate: totalWins == null
       ? null

@@ -27,9 +27,14 @@ jobs:
           python-version: "3.12"
 
       - name: Collect DAK.GG statistics
+        id: collect
+        env:
+          # 2026-08-14 00:00 Asia/Seoul
+          DAKGG_COLLECT_AFTER: "2026-08-13T15:00:00Z"
         run: python scripts/collect_dakgg_stats.py
 
       - name: Create data release when missing
+        if: steps.collect.outputs.updated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -41,6 +46,7 @@ jobs:
           fi
 
       - name: Upload refreshed runtime data
+        if: steps.collect.outputs.updated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload dakgg-data data/dakgg_stats.json.gz --clobber

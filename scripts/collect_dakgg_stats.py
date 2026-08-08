@@ -8,6 +8,7 @@ import gzip
 import json
 import os
 import sqlite3
+import sys
 import time
 from contextlib import closing
 from datetime import datetime, timezone
@@ -24,6 +25,7 @@ DEFAULT_ARTIFACT_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "dakgg_stats.json.gz"
 )
 USER_AGENT = "ER-Dodge-Check/1.0 (+https://github.com/dejava-daisky/er-dodge)"
+COLLECT_AFTER_ENV = "DAKGG_COLLECT_AFTER"
 TIERS = (
     ("in1000", "상위 1000명"),
     ("mithril_plus", "미스릴+"),
@@ -159,13 +161,46 @@ SUM_FIELDS = (
 )
 
 
+class TierSnapshotUnavailableError(RuntimeError):
+    """Raised when DAK.GG has not published a requested tier snapshot."""
+
+    def __init__(self, tier_key, error):
+        super().__init__(f"tier snapshot {tier_key} is unavailable: {error}")
+        self.tier_key = tier_key
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH)
     parser.add_argument("--artifact", type=Path, default=DEFAULT_ARTIFACT_PATH)
     parser.add_argument("--period-days", type=int, default=7)
     parser.add_argument("--delay", type=float, default=0.35)
+    parser.add_argument(
+        "--collect-after",
+        type=parse_timestamp,
+        default=os.environ.get(COLLECT_AFTER_ENV),
+        help="do not collect before this ISO-8601 timestamp",
+    )
     return parser.parse_args()
+
+
+def parse_timestamp(value):
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "collect-after must be an ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None:
+        raise argparse.ArgumentTypeError("collect-after must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def set_collection_output(updated):
+    output_path = os.environ.get("GITHUB_OUTPUT")
+    if output_path:
+        with open(output_path, "a", encoding="utf-8") as output:
+            output.write(f"updated={'true' if updated else 'false'}\n")
 
 
 def fetch_tier(tier_key, period_days, attempts=3):
@@ -193,6 +228,8 @@ def fetch_tier(tier_key, period_days, attempts=3):
                     raise RuntimeError(f"unexpected HTTP status {response.status}")
                 return json.load(response)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+            if isinstance(exc, HTTPError) and exc.code == 404:
+                raise TierSnapshotUnavailableError(tier_key, exc) from exc
             if attempt == attempts:
                 raise RuntimeError(f"failed to fetch tier {tier_key}: {exc}") from exc
             time.sleep(attempt * 2)
@@ -572,12 +609,37 @@ def build_release_artifact(db_path, artifact_path, character_metadata):
 
 def main():
     args = parse_args()
+    set_collection_output(False)
+    artifact_path = args.artifact.resolve()
+    if args.collect_after and datetime.now(timezone.utc) < args.collect_after:
+        if not artifact_path.is_file():
+            raise RuntimeError(
+                f"collection is deferred until {args.collect_after.isoformat()}, "
+                "but no cached artifact is available"
+            )
+        print(
+            f"collection deferred until {args.collect_after.isoformat()}; "
+            f"keeping cached artifact {artifact_path}"
+        )
+        return
+
     print("fetching character metadata...")
     characters = fetch_characters()
     payloads = []
     for index, (tier_key, tier_label) in enumerate(TIERS):
         print(f"fetching {tier_key}...")
-        payload = fetch_tier(tier_key, args.period_days)
+        try:
+            payload = fetch_tier(tier_key, args.period_days)
+        except TierSnapshotUnavailableError as exc:
+            if not artifact_path.is_file():
+                raise RuntimeError(
+                    f"{exc}; no existing release artifact is available"
+                ) from exc
+            print(
+                f"warning: {exc}; keeping existing release artifact {artifact_path}",
+                file=sys.stderr,
+            )
+            return
         validate_snapshot(payload, tier_key, args.period_days)
         payloads.append((tier_key, tier_label, payload))
         if index + 1 < len(TIERS):
@@ -589,7 +651,8 @@ def main():
     else:
         build_database(db_path, payloads, args.period_days)
     print_summary(db_path)
-    build_release_artifact(db_path, args.artifact.resolve(), characters)
+    build_release_artifact(db_path, artifact_path, characters)
+    set_collection_output(True)
 
 
 if __name__ == "__main__":

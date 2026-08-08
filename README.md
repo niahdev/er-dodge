@@ -43,6 +43,13 @@ and replaces `dakgg_stats.json.gz` on the `dakgg-data` GitHub Release. It does
 not commit data to the repository, so scheduled refreshes do not trigger
 Netlify production deploys.
 
+Collection is deferred until `DAKGG_COLLECT_AFTER` (currently 2026-08-14
+00:00 Asia/Seoul). After that time, the Release is replaced only after every
+tier snapshot has been collected successfully. If DAK.GG has not published a
+tier yet, the upload steps are skipped and the last successful Release remains
+active. The checked-in `data/dakgg_stats.json.gz` is the bundled cache used if
+the Release cannot be downloaded.
+
 The Netlify runtime downloads:
 
 `https://github.com/dejava-daisky/er-dodge/releases/download/dakgg-data/dakgg_stats.json.gz`

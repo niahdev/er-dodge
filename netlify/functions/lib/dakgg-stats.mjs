@@ -13,6 +13,7 @@ const FALLBACK_PATH = fileURLToPath(
 let cache = null;
 let cacheExpiresAt = 0;
 let pendingLoad = null;
+let bundledCache = null;
 
 function parseArtifact(buffer) {
   const parsed = JSON.parse(gunzipSync(buffer).toString("utf8"));
@@ -72,10 +73,16 @@ export async function getDakggStats() {
   return pendingLoad;
 }
 
+export async function getCachedDakggStats() {
+  if (!bundledCache) bundledCache = await readBundledArtifact();
+  return bundledCache;
+}
+
 export function resetDakggStatsCache() {
   cache = null;
   cacheExpiresAt = 0;
   pendingLoad = null;
+  bundledCache = null;
 }
 
 export function tierForMmr(mmr, rank = null) {
@@ -179,4 +186,5 @@ export function resetDakggStatsCacheForTests() {
   cache = null;
   cacheExpiresAt = 0;
   pendingLoad = null;
+  bundledCache = null;
 }

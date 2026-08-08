@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   compareMostCharacters,
+  getCachedDakggStats,
   getDakggStats,
   resetDakggStatsCacheForTests,
   tierForMmr,
@@ -24,6 +25,13 @@ test("maps MMR to a DAK.GG tier key", () => {
   assert.equal(tierForMmr(7400), "mithril_plus");
   assert.equal(tierForMmr(7400, 1000), "in1000");
   assert.equal(tierForMmr(7400, 1001), "mithril_plus");
+});
+
+test("loads the bundled cache explicitly for previous-season analysis", async () => {
+  resetDakggStatsCacheForTests();
+  const data = await getCachedDakggStats();
+  assert.equal(data.schemaVersion, 1);
+  assert.ok(data.tiers.gold.characters["72"]);
 });
 
 test("loads the artifact fallback and compares a most-played character", async () => {

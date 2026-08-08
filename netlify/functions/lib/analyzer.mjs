@@ -1,5 +1,6 @@
 import {
   compareMostCharacters,
+  getCachedDakggStats,
   getDakggStats,
   tierForMmr,
 } from "./dakgg-stats.mjs";
@@ -1029,7 +1030,9 @@ export async function evaluatePlayer(nickname) {
     return buildNoRecentRankResult(nickname, baseMetrics);
   }
 
-  const dakggStats = await getDakggStats();
+  const dakggStats = seasonBasis === "previous"
+    ? await getCachedDakggStats()
+    : await getDakggStats();
   const [score, comment, scoreBreakdown, dodgeProtected] = calculateScore(
     stats,
     recent,

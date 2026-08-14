@@ -7,7 +7,7 @@ const DEFAULT_URL =
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8000;
 const FALLBACK_PATH = fileURLToPath(
-  new URL("../../../data/dakgg_stats.json.gz", import.meta.url),
+  new URL("../../../baseline/dakgg_stats.json.gz", import.meta.url),
 );
 
 let cache = null;

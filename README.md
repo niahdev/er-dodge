@@ -24,6 +24,7 @@ compressed runtime artifact:
 
 - `data/dakgg_stats.sqlite3`: local inspection database, ignored by Git
 - `data/dakgg_stats.json.gz`: Netlify runtime data and bundled fallback
+- `baseline/dakgg_stats.json.gz`: frozen previous-season scoring baseline
 
 The database contains:
 

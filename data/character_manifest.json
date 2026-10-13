@@ -75,6 +75,11 @@
       "thumbnail": "/static/characters/Luke_Mini.png",
       "source": "https://eternalreturn.fandom.com/wiki/File:Luke_Mini.png"
     },
+    "루치아": {
+      "resource": "Lucia",
+      "thumbnail": "/static/characters/Lucia_Mini.png",
+      "source": "https://cdn.dak.gg/assets/er/game-assets/12.5.0/CharProfile_Lucia_S000.png"
+    },
     "르노어": {
       "resource": "Lenore",
       "thumbnail": "/static/characters/Lenore_Mini.png",
@@ -154,6 +159,11 @@
       "resource": "Celine",
       "thumbnail": "/static/characters/Celine_Mini.png",
       "source": "https://eternalreturn.fandom.com/wiki/File:Celine_Mini.png"
+    },
+    "세레스": {
+      "resource": "Seres",
+      "thumbnail": "/static/characters/Seres_Mini.png",
+      "source": "https://cdn.dak.gg/assets/er/game-assets/12.5.0/CharProfile_Seres_S000.png"
     },
     "쇼우": {
       "resource": "Xiukai",
@@ -364,6 +374,11 @@
       "resource": "Coraline",
       "thumbnail": "/static/characters/Coraline_Mini.png",
       "source": "https://eternalreturn.fandom.com/wiki/File:Coraline_Mini.png"
+    },
+    "크레이버": {
+      "resource": "Craver",
+      "thumbnail": "/static/characters/Craver_Mini.png",
+      "source": "https://cdn.dak.gg/assets/er/game-assets/12.5.0/CharProfile_Craver_S000.png"
     },
     "클로에": {
       "resource": "Chloe",

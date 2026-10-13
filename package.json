@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node server.mjs",
     "refresh:stats": "python scripts/collect_dakgg_stats.py",
+    "refresh:patches": "python scripts/collect_patch_notes.py",
     "check": "node --check server.mjs && node --check netlify/functions/analyze.mjs && node --check netlify/functions/analyze-me.mjs && node --check netlify/functions/analyze-feedback.mjs && node --check netlify/functions/ocr.mjs && node --check netlify/functions/patch-characters.mjs && node --check netlify/functions/patch-character.mjs && node --check netlify/functions/lib/analyzer.mjs && node --check netlify/functions/lib/dakgg-stats.mjs && node --check netlify/functions/lib/patches.mjs",
     "test": "node --test tests/*.test.mjs"
   }
